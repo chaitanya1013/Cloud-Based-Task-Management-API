@@ -1,7 +1,11 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-require("dotenv").config();
+
+const db = require("./config/db");
+const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 
@@ -10,7 +14,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Health check API
+// Health check
 app.get("/health", (req, res) => {
     res.status(200).json({
         status: "success",
@@ -18,9 +22,25 @@ app.get("/health", (req, res) => {
     });
 });
 
-// Server
+// Task routes
+app.use("/api/tasks", taskRoutes);
+
+// Start server
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+    try {
+        const connection = await db.getConnection();
+        console.log("MySQL connected successfully!");
+        connection.release();
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error("Database connection failed:", error.message);
+        process.exit(1);
+    }
+}
+
+startServer();
